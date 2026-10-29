@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="forest">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<title>座舱专注力训练 · 舒尔特方格</title>
+<meta name="description" content="面向飞行员的舒尔特方格专注力训练：四种模式、压力告警、五套主题，离线可玩。">
+<meta name="theme-color" content="#1A1714" id="themeColor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="座舱专注">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<script>
+/* 主题预置：在 CSS 之前执行，避免首屏闪色。首次固定 forest，不读取系统偏好。 */
+(function () {
+  var key = 'schulte_theme';
+  var map = { forest: '#1A1714', ocean: '#131A22', graphite: '#17181A', ember: '#1C1512', paper: '#F1EBDF' };
+  var theme = 'forest';
+  try {
+    var saved = localStorage.getItem(key);
+    if (saved && map[saved]) theme = saved;
+  } catch (e) {}
+  var root = document.documentElement;
+  root.setAttribute('data-theme', theme);
+  root.style.colorScheme = theme === 'paper' ? 'light' : 'dark';
+  var meta = document.getElementById('themeColor');
+  if (meta) meta.setAttribute('content', map[theme]);
+}());
+</script>
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body data-view="start">
+
+<div class="app">
+  <header class="hud" id="hud">
+    <div class="hud-stats">
+      <span class="hud-time" id="hudTime">00:00</span>
+      <span class="hud-err" id="hudErr">错误 <b id="hudErrNum">0</b></span>
+      <span class="hud-count" id="hudCount">0/25</span>
+    </div>
+    <div class="hud-actions">
+      <button type="button" class="icon-btn" id="quitBtn" aria-label="结束本局" hidden>✕</button>
+      <button type="button" class="icon-btn theme-btn" id="themeBtn" aria-label="切换主题" aria-haspopup="dialog" aria-expanded="false">
+        <span class="theme-dot" aria-hidden="true"></span>
+      </button>
+    </div>
+    <div class="hud-progress" aria-hidden="true"><span id="hudBar"></span></div>
+  </header>
+
+  <main class="stage">
+    <div class="prompt" id="prompt" aria-live="polite">
+      <span class="prompt-label">下一个</span>
+      <span class="prompt-token" id="promptToken">—</span>
+      <span class="prompt-hint" id="promptHint"></span>
+    </div>
+    <div class="board" id="board" data-size="5" role="group" aria-label="舒尔特方格"></div>
+  </main>
+
+  <footer class="foot">成绩只存本机，不上传</footer>
+</div>
+
+<section class="screen" id="startView" aria-labelledby="startTitle">
+  <div class="card">
+    <p class="eyebrow">PILOT FOCUS TRAINER</p>
+    <h1 id="startTitle">座舱专注力训练</h1>
+    <p class="sub">舒尔特方格 · 扫视与注意力切换</p>
+
+    <h2 class="section-title">训练模式</h2>
+    <div class="mode-grid" id="modeList"></div>
+
+    <h2 class="section-title">难度</h2>
+    <div class="seg" id="sizeList" role="group" aria-label="难度"></div>
+
+    <button type="button" class="switch-row" id="stressToggle" role="switch" aria-checked="false">
+      <span class="switch-text"><b>压力模式</b><small>随机告警，2 秒内确认</small></span>
+      <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+    </button>
+
+    <button type="button" class="primary" id="startBtn">开始训练</button>
+    <button type="button" class="ghost" id="dataBtn">训练数据与导出</button>
+    <p class="note">成绩只存本机，不上传。单局上限 5 分钟。</p>
+  </div>
+</section>
+
+<section class="screen" id="resultView" aria-labelledby="resultTitle" hidden>
+  <div class="card">
+    <div class="result-head">
+      <div class="rating" id="resultRating">S</div>
+      <div class="result-title-wrap">
+        <h2 id="resultTitle">训练完成</h2>
+        <p class="sub" id="resultSub"></p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span>总用时</span><b id="resultTime">—</b></div>
+      <div class="stat"><span>平均反应</span><b id="resultAvg">—</b></div>
+      <div class="stat"><span>错误</span><b id="resultErrors">—</b></div>
+      <div class="stat"><span>正确率</span><b id="resultAcc">—</b></div>
+    </div>
+
+    <p class="advice" id="resultAdvice"></p>
+    <p class="rest-note" id="restNote" hidden>已到 5 分钟上限，先起身活动、远眺 20 秒。</p>
+
+    <div class="trend-head"><span>最近 10 局用时</span><span class="muted">单位：秒</span></div>
+    <div class="trend" id="resultTrend" aria-label="最近十局用时柱状图"></div>
+
+    <div class="actions">
+      <button type="button" class="primary" id="againBtn">再开一局</button>
+      <div class="action-row">
+        <button type="button" class="secondary" id="changeSizeBtn">换难度</button>
+        <button type="button" class="secondary" id="changeModeBtn">换模式</button>
+      </div>
+    </div>
+    <p class="note">成绩只存本机，不上传。</p>
+  </div>
+</section>
+
+<div class="stress" id="stressBar" role="alert" hidden>
+  <div class="stress-info">
+    <b id="stressCode">STALL</b>
+    <span id="stressZh">失速告警</span>
+  </div>
+  <span class="stress-hint">2 秒内确认</span>
+  <button type="button" class="stress-btn" id="stressConfirm">确认</button>
+</div>
+
+<div class="theme-layer" id="themeLayer" hidden>
+  <div class="theme-scrim" id="themeScrim"></div>
+  <div class="theme-panel" role="dialog" aria-label="选择主题" aria-modal="true">
+    <div class="theme-options" id="themeOptions"></div>
+  </div>
+</div>
+
+<div class="modal-layer" id="modalLayer" hidden>
+  <div class="modal-scrim" id="modalScrim"></div>
+  <div class="modal-card" id="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+    <h2 id="modalTitle">提示</h2>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<div class="sr-only" id="live" aria-live="polite"></div>
+
+<script src="./js/app.js" defer></script>
+</body>
+</html>
